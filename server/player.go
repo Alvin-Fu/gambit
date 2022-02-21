@@ -35,11 +35,11 @@ func (pt PlayerType) String() string {
 // Player is a player in a chess game who belongs to a room, has a ssh session
 // and a bubble tea program.
 type Player struct {
-	room    *Room
+	room    *Room // 所在的房间信息
 	session ssh.Session
 	program *tea.Program
 	game    *SharedGame
-	ptype   PlayerType
+	ptype   PlayerType // 玩家类型
 	key     PublicKey
 	once    sync.Once
 }

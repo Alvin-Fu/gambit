@@ -23,10 +23,11 @@ func (pk PublicKey) String() string {
 
 // Server is a server that manages chess games.
 type Server struct {
-	host  string
-	port  int
-	srv   *ssh.Server
-	rooms map[string]*Room
+	host string
+	port int
+	srv  *ssh.Server // 一个ssh服务
+	//Todo： 对map的并发读写
+	rooms map[string]*Room // 游戏的房间
 }
 
 // NewServer creates a new server.
@@ -36,6 +37,7 @@ func NewServer(keyPath, host string, port int) (*Server, error) {
 		port:  port,
 		rooms: make(map[string]*Room),
 	}
+	// 初始化一个ssh服务
 	ws, err := wish.NewServer(
 		ssh.PasswordAuth(passwordHandler),
 		ssh.PublicKeyAuth(publicKeyHandler),

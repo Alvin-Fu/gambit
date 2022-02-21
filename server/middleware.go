@@ -10,8 +10,8 @@ import (
 	"github.com/muesli/termenv"
 )
 
-// gambitMiddleware is a middleware that handles the Gambit ssh server. It
-// creates rooms and assigns players to them.
+// gambitMiddleware is a middleware that handles the Gambit ssh server.
+// It creates rooms and assigns players to them.
 func gambitMiddleware(srv *Server) wish.Middleware {
 	return func(sh ssh.Handler) ssh.Handler {
 		lipgloss.SetColorProfile(termenv.ANSI256)

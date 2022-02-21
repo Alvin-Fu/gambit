@@ -16,9 +16,9 @@ var (
 
 // Room is a game room with a unique id, password, and a list of players.
 type Room struct {
-	id          string
+	id          string // 房间id
 	password    string
-	players     map[string]*Player
+	players     map[string]*Player // map的并发读写需要加锁
 	whiteToMove bool
 	sync        chan tea.Msg
 	done        chan struct{}

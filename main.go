@@ -32,6 +32,7 @@ var (
 					defer f.Close()
 				}
 
+				// 创建一个终端
 				p := tea.NewProgram(
 					game.NewGameWithPosition(startPos),
 					tea.WithAltScreen(),

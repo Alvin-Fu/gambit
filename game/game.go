@@ -65,7 +65,7 @@ func NewGameWithPosition(position string) *Game {
 }
 
 // Init Initializes the model
-func (m *Game) Init() tea.Cmd {
+func (gm *Game) Init() tea.Cmd {
 	return nil
 }
 
@@ -97,21 +97,20 @@ func (m *Game) Init() tea.Cmd {
 //    └───┴───┴───┴───┴───┴───┴───┴───┘
 //      A   B   C   D   E   F   G   H
 //
-func (m *Game) View() string {
+func (gm *Game) View() string {
 	var s strings.Builder
 	s.WriteString(border.Top())
 
 	// Traverse through the rows and columns of the board and print out the
 	// pieces and empty squares. Once a piece is selected, highlight the legal
 	// moves and pieces that may be captured by the selected piece.
-	var rows = fen.Grid(m.board.ToFen())
-
+	var rows = fen.Grid(gm.board.ToFen())
 	for r := board.FirstRow; r < board.Rows; r++ {
 		row := pieces.ToPieces(rows[r])
 		rr := board.LastRow - r
 
 		// reverse the row if the board is flipped
-		if m.flipped {
+		if gm.flipped {
 			row = pieces.ToPieces(rows[board.LastRow-r])
 			for i, j := 0, len(row)-1; i < j; i, j = i+1, j-1 {
 				row[i], row[j] = row[j], row[i]
@@ -122,14 +121,14 @@ func (m *Game) View() string {
 		s.WriteString(Faint(fmt.Sprintf(" %d ", rr+1)) + border.Vertical)
 
 		for c, piece := range row {
-			whiteTurn := m.board.Wtomove
+			whiteTurn := gm.board.Wtomove
 			display := piece.Display()
-			check := m.board.OurKingInCheck()
-			selected := position.ToSquare(r, c, m.flipped)
+			check := gm.board.OurKingInCheck()
+			selected := position.ToSquare(r, c, gm.flipped)
 
 			// The user selected the current cell, highlight it so they know it is
 			// selected. If it is a check, highlight the king in red.
-			if m.selected == selected {
+			if gm.selected == selected {
 				display = Cyan(display)
 			} else if check && piece.IsKing() {
 				if (whiteTurn && piece.IsWhite()) || (!whiteTurn && piece.IsBlack()) {
@@ -139,7 +138,7 @@ func (m *Game) View() string {
 
 			// Show all the cells to which the piece may move. If it is an empty cell
 			// we present a coloured dot, otherwise color the capturable piece.
-			if moves.IsLegal(m.pieceMoves, selected) {
+			if moves.IsLegal(gm.pieceMoves, selected) {
 				if piece.IsEmpty() {
 					display = "."
 				}
@@ -155,50 +154,50 @@ func (m *Game) View() string {
 		}
 	}
 
-	s.WriteString(border.Bottom() + Faint(border.BottomLabels(m.flipped)))
+	s.WriteString(border.Bottom() + Faint(border.BottomLabels(gm.flipped)))
 	return s.String()
 }
 
-func (m *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (gm *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.MouseMsg:
 		if msg.Type != tea.MouseLeft {
-			return m, nil
+			return gm, nil
 		}
 
 		// Find the square the user clicked on, this will either be our square
 		// square for our piece or the destination square for a move if a piece is
 		// already square and that destination square completes a legal move
-		square := border.Cell(msg.X, msg.Y, m.flipped)
-		return m.Select(square)
+		square := border.Cell(msg.X, msg.Y, gm.flipped)
+		return gm.Select(square)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			return m, tea.Quit
+			return gm, tea.Quit
 		case "ctrl+f":
-			m.flipped = !m.flipped
+			gm.flipped = !gm.flipped
 		case "a", "b", "c", "d", "e", "f", "g", "h":
-			m.buffer = msg.String()
+			gm.buffer = msg.String()
 		case "1", "2", "3", "4", "5", "6", "7", "8":
 			var move string
-			if m.buffer != "" {
-				move = m.buffer + msg.String()
-				m.buffer = ""
+			if gm.buffer != "" {
+				move = gm.buffer + msg.String()
+				gm.buffer = ""
 			}
-			return m.Select(move)
+			return gm.Select(move)
 		case "esc":
-			return m.Deselect()
+			return gm.Deselect()
 		}
 	case MoveMsg:
-		m.selected = msg.From
-		m.pieceMoves = moves.LegalSelected(m.moves, m.selected)
-		return m.Select(msg.To)
+		gm.selected = msg.From
+		gm.pieceMoves = moves.LegalSelected(gm.moves, gm.selected)
+		return gm.Select(msg.To)
 	}
 
-	return m, nil
+	return gm, nil
 }
 
-func (m *Game) Notify(from, to string, turn, check, checkmate bool) tea.Cmd {
+func (gm *Game) Notify(from, to string, turn, check, checkmate bool) tea.Cmd {
 	return func() tea.Msg {
 		return NotifyMsg{
 			From: from, To: to, Turn: turn,
@@ -207,58 +206,58 @@ func (m *Game) Notify(from, to string, turn, check, checkmate bool) tea.Cmd {
 	}
 }
 
-func (m *Game) Deselect() (tea.Model, tea.Cmd) {
-	m.selected = ""
-	m.pieceMoves = []dt.Move{}
-	return m, nil
+func (gm *Game) Deselect() (tea.Model, tea.Cmd) {
+	gm.selected = ""
+	gm.pieceMoves = []dt.Move{}
+	return gm, nil
 }
 
-func (m *Game) Select(square string) (tea.Model, tea.Cmd) {
+func (gm *Game) Select(square string) (tea.Model, tea.Cmd) {
 	// If the user has already selected a piece, check see if the square that
 	// the user clicked on is a legal move for that piece. If so, make the move.
-	if m.selected != "" {
-		from := m.selected
+	if gm.selected != "" {
+		from := gm.selected
 		to := square
 
-		for _, move := range m.pieceMoves {
+		for _, move := range gm.pieceMoves {
 			if move.String() == from+to {
 				var cmds []tea.Cmd
-				m.board.Apply(move)
+				gm.board.Apply(move)
 
 				// We have applied a new move and the chess board is in a new state.
 				// We must generate the new legal moves for the new state.
-				m.moves = m.board.GenerateLegalMoves()
-				check := m.board.OurKingInCheck()
-				checkmate := check && len(m.moves) == 0
+				gm.moves = gm.board.GenerateLegalMoves()
+				check := gm.board.OurKingInCheck()
+				checkmate := check && len(gm.moves) == 0
 
 				// We have made a move, so we no longer have a selected piece or
 				// legal moves for any selected pieces.
-				g, cmd := m.Deselect()
-				cmds = append(cmds, cmd, m.Notify(from, to, m.board.Wtomove, check, checkmate))
+				g, cmd := gm.Deselect()
+				cmds = append(cmds, cmd, gm.Notify(from, to, gm.board.Wtomove, check, checkmate))
 				return g, tea.Batch(cmds...)
 			}
 		}
 
 		// The user clicked on a square that wasn't a legal move for the selected
 		// piece, so we select the piece that was clicked on instead
-		m.selected = to
+		gm.selected = to
 	} else {
-		m.selected = square
+		gm.selected = square
 	}
 
 	// After a mouse click, we must generate the legal moves for the selected
 	// piece, if there is a newly selected piece
-	m.pieceMoves = moves.LegalSelected(m.moves, m.selected)
+	gm.pieceMoves = moves.LegalSelected(gm.moves, gm.selected)
 
-	return m, nil
+	return gm, nil
 }
 
 // SetFlipped sets the board to be flipped or not.
-func (g *Game) SetFlipped(flip bool) {
-	g.flipped = flip
+func (gm *Game) SetFlipped(flip bool) {
+	gm.flipped = flip
 }
 
 // Position returns the current FEN position of the board.
-func (g *Game) Position() string {
-	return g.board.ToFen()
+func (gm *Game) Position() string {
+	return gm.board.ToFen()
 }

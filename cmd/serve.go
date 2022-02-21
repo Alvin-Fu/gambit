@@ -21,7 +21,7 @@ var (
 		Use:     "serve",
 		Aliases: []string{"server"},
 		Short:   "Start a Gambit server",
-		Args:    coral.NoArgs,
+		Args:    coral.NoArgs, // 没有参数
 		RunE: func(cmd *coral.Command, args []string) error {
 			s, err := server.NewServer(key, host, port)
 			if err != nil {
